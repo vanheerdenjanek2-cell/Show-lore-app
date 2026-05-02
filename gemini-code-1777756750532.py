@@ -2,54 +2,55 @@ import streamlit as st
 from tavily import TavilyClient
 import google.generativeai as genai
 
-# --- AUTO-CONFIG ---
-st.set_page_config(page_title="Lore Agent", page_icon="🕵️")
+# --- 1. SECURE KEY LOADING ---
+# Ensure you add TAVILY_API_KEY and GOOGLE_API_KEY to your Streamlit Secrets!
+try:
+    TAVILY_KEY = st.secrets["tvly-dev-3HS3ax-WTnZLeRqRfPeQboEgJLF21FGd3INARKWJprY9FhtE5TAVILY_API_KEY"]
+    GOOGLE_KEY = st.secrets["AIzaSyDP_VsCgFF5orvyMHtROEaStJwjlen2asE"]
+except KeyError:
+    st.error("Missing API Keys! Go to Settings > Secrets and add TAVILY_API_KEY and GOOGLE_API_KEY.")
+    st.stop()
 
-# This part checks your dashboard for the "passwords" automatically
-def initialize_agents():
-    try:
-        t_key = st.secrets["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"]
-        g_key = st.secrets["AIzaSyDP_VsCgFF5orvyMHtROEaStJwjlen2asE"]
-        
-        # Connect to Tavily (Search)
-        tavily_client = TavilyClient(api_key=t_key)
-        
-        # Connect to Gemini (Brain)
-        genai.configure(api_key=g_key)
-        gemini_model = genai.GenerativeModel('gemini-1.5-flash')
-        
-        return tavily_client, gemini_model
-    except Exception:
-        st.error("⚠️ Setup incomplete! You need to add your keys to the Streamlit Secrets dashboard.")
-        st.info("Go to Settings > Secrets and paste your keys there.")
-        st.stop()
+# Initialize the Free Tools
+tavily = TavilyClient(api_key=TAVILY_KEY)
+genai.configure(api_key=GOOGLE_KEY)
 
-tavily, model = initialize_agents()
+# Using Gemini 1.5 Flash (It's fast and has a great free tier)
+model = genai.GenerativeModel('gemini-1.5-flash')
 
-# --- THE APP INTERFACE ---
-st.title("🕵️ Lore Researcher")
-st.write("I'll search the web and write a deep-dive report for you.")
+# --- 2. THE RESEARCH ENGINE ---
+def get_ai_lore(show_name):
+    # Search the web for free (Tavily has a free tier for 1,000 searches/mo)
+    search_query = f"{show_name} animated series deep lore and plot secrets"
+    search_results = tavily.search(query=search_query, search_depth="advanced")
+    
+    # Combine the search findings
+    context = ""
+    for result in search_results['results']:
+        context += f"\nSource: {result['url']}\nContent: {result['content']}\n"
 
-show_query = st.text_input("Which show should I investigate?", placeholder="e.g. Adventure Time")
+    # Use the Gemini API to write the lore report
+    prompt = f"You are a lore expert. Based on these search results, explain the deep lore of {show_name}. Focus on secrets a casual fan wouldn't know:\n{context}"
+    
+    response = model.generate_content(prompt)
+    return response.text
 
-if st.button("Start Research"):
-    if show_query:
-        with st.spinner(f"Scouring the web for {show_query} lore..."):
+# --- 3. THE USER INTERFACE ---
+st.set_page_config(page_title="Free AI Lore Agent", page_icon="🌐")
+
+st.title("🌐 Free AI Lore Researcher")
+st.write("Using Gemini API")
+
+show_input = st.text_input("Enter Show Name:", placeholder="e.g., Adventure Time")
+
+if st.button("Research Lore"):
+    if show_input:
+        with st.spinner(f"Searching the internet for {show_input}..."):
             try:
-                # 1. Automated Web Search
-                search = tavily.search(query=f"{show_query} deep lore secrets and plot analysis", search_depth="advanced")
-                context = "\n".join([f"Source: {r['url']}\nContent: {r['content']}" for r in search['results']])
-                
-                # 2. AI Brain Processing
-                prompt = f"Act as a lore expert. Using these search results, write a fascinating deep-dive report on {show_query}. Focus on hidden details:\n\n{context}"
-                response = model.generate_content(prompt)
-                
-                # 3. Show Result
-                st.markdown("### 📜 The Lore Report")
-                st.markdown(response.text)
-                st.success("Research complete!")
-                
+                lore_report = get_ai_lore(show_input)
+                st.markdown("---")
+                st.markdown(lore_report)
             except Exception as e:
                 st.error(f"Something went wrong: {e}")
     else:
-        st.warning("Please enter a name first!")
+        st.warning("Please enter a show name first!")
