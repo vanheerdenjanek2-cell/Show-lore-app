@@ -8,8 +8,8 @@ st.set_page_config(page_title="Lore Agent", page_icon="🕵️")
 # This part checks your dashboard for the "passwords" automatically
 def initialize_agents():
     try:
-        t_key = st.secrets["TAVILY_API_KEY"]
-        g_key = st.secrets["GOOGLE_API_KEY"]
+        t_key = st.secrets["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"]
+        g_key = st.secrets["AIzaSyDP_VsCgFF5orvyMHtROEaStJwjlen2asE"]
         
         # Connect to Tavily (Search)
         tavily_client = TavilyClient(api_key=t_key)
