@@ -1,57 +1,55 @@
 import streamlit as st
 from tavily import TavilyClient
-import openai
+import google.generativeai as genai
 
-# --- Setup Keys ---
-# In a real app, use st.secrets for safety!
-TAVILY_API_KEY = "your_tavily_key_here"
-OPENAI_API_KEY = "your_openai_key_here"
+# --- AUTO-CONFIG ---
+st.set_page_config(page_title="Lore Agent", page_icon="🕵️")
 
-client_tavily = TavilyClient(api_key=TAVILY_API_KEY)
-openai.api_key = OPENAI_API_KEY
+# This part checks your dashboard for the "passwords" automatically
+def initialize_agents():
+    try:
+        t_key = st.secrets["TAVILY_API_KEY"]
+        g_key = st.secrets["GOOGLE_API_KEY"]
+        
+        # Connect to Tavily (Search)
+        tavily_client = TavilyClient(api_key=t_key)
+        
+        # Connect to Gemini (Brain)
+        genai.configure(api_key=g_key)
+        gemini_model = genai.GenerativeModel('gemini-1.5-flash')
+        
+        return tavily_client, gemini_model
+    except Exception:
+        st.error("⚠️ Setup incomplete! You need to add your keys to the Streamlit Secrets dashboard.")
+        st.info("Go to Settings > Secrets and paste your keys there.")
+        st.stop()
 
-def research_lore(show_name):
-    """Uses Tavily to find lore and OpenAI to summarize it."""
-    query = f"{show_name} animated series deep lore, world building, and essential plot points"
-    
-    # 1. Search the internet for lore
-    search_result = client_tavily.search(query=query, search_depth="advanced", max_results=5)
-    
-    # 2. Combine search results into one big text block
-    context = "\n".join([f"Source {i+1}: {res['content']}" for i, res in enumerate(search_result['results'])])
-    
-    # 3. Use AI to turn that data into a cool lore guide
-    prompt = f"""
-    You are a Lore Expert. Based on the following search results about '{show_name}', 
-    create a deep lore guide. Include:
-    1. The World/Setting
-    2. Major Lore Secrets
-    3. Key Story Arcs to watch
-    
-    Search Data:
-    {context}
-    """
-    
-    response = openai.chat.completions.create(
-        model="gpt-4o",
-        messages=[{"role": "user", "content": prompt}]
-    )
-    
-    return response.choices[0].message.content
+tavily, model = initialize_agents()
 
-# --- Streamlit UI ---
-st.title("🌐 AI Lore Researcher")
-st.write("Enter any show, and I'll scour the internet to find its deepest secrets.")
+# --- THE APP INTERFACE ---
+st.title("🕵️ Lore Researcher")
+st.write("I'll search the web and write a deep-dive report for you.")
 
-show_input = st.text_input("Enter Show Name:", placeholder="e.g., Adventure Time")
+show_query = st.text_input("Which show should I investigate?", placeholder="e.g. Adventure Time")
 
-if st.button("Research Lore"):
-    if show_input:
-        with st.spinner(f"Agent is researching '{show_input}' across the web..."):
+if st.button("Start Research"):
+    if show_query:
+        with st.spinner(f"Scouring the web for {show_query} lore..."):
             try:
-                lore_report = research_lore(show_input)
-                st.markdown(lore_report)
+                # 1. Automated Web Search
+                search = tavily.search(query=f"{show_query} deep lore secrets and plot analysis", search_depth="advanced")
+                context = "\n".join([f"Source: {r['url']}\nContent: {r['content']}" for r in search['results']])
+                
+                # 2. AI Brain Processing
+                prompt = f"Act as a lore expert. Using these search results, write a fascinating deep-dive report on {show_query}. Focus on hidden details:\n\n{context}"
+                response = model.generate_content(prompt)
+                
+                # 3. Show Result
+                st.markdown("### 📜 The Lore Report")
+                st.markdown(response.text)
+                st.success("Research complete!")
+                
             except Exception as e:
                 st.error(f"Something went wrong: {e}")
     else:
-        st.warning("Please enter a show name first!")
+        st.warning("Please enter a name first!")
