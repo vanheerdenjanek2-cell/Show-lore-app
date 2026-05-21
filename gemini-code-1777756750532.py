@@ -4,7 +4,7 @@ from google import genai
 
 # --- HARDCODED KEYS ---
 t_key = "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"
-g_key = "AIzaSyCb-amhqIl1UB-my8BgH-BORgdniiWA6F0"
+g_key = "AIzaSyCb-amhqIl1UB-my8BgH-B0RgdniiwA6F0"
 
 st.title("🕵️ Lore Researcher")
 
