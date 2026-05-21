@@ -3,18 +3,17 @@ from tavily import TavilyClient
 from google import genai
 
 # --- SECURE KEY LOADING ---
-# Leave these EXACT names here! Python uses these to look inside your Secrets dashboard.
-t_key = st.secrets.get("TAVILY_API_KEY")
-g_key = st.secrets.get("GOOGLE_API_KEY")
+# .strip() automatically deletes hidden spaces and line breaks (\n)
+t_key = st.secrets.get("TAVILY_API_KEY", "").strip()
+g_key = st.secrets.get("GOOGLE_API_KEY", "").strip()
 
 st.title("🕵️ Lore Researcher")
 
-# Diagnostic check to help us verify the dashboard link
+# Diagnostic check
 if not t_key or not g_key:
     st.error("🚨 Key Mismatch!")
     st.write(f"Tavily Key Found: {'✅' if t_key else '❌'}")
     st.write(f"Google Key Found: {'✅' if g_key else '❌'}")
-    st.info("Ensure your Secrets dashboard has keys named exactly TAVILY_API_KEY and GOOGLE_API_KEY.")
     st.stop()
 
 # Initialize tools
