@@ -6,8 +6,8 @@ from google import genai
 # These names inside the brackets MUST stay as TAVILY_API_KEY and GOOGLE_API_KEY
 # Do NOT put the long 'tvly-' or 'AIza-' keys here. 
 # Those keys stay in the "Secrets" dashboard only.
-t_key = st.secrets.get("TAVILY_API_KEY")
-g_key = st.secrets.get("GOOGLE_API_KEY")
+t_key = st.secrets.get("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")
+g_key = st.secrets.get("AIzaSyCb-amhqIl1UB-my8BgH-B0RgdniiwA6F0")
 
 st.title("🕵️ Lore Researcher")
 
